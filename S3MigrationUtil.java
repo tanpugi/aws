@@ -152,9 +152,11 @@ public class S3MigrationUtil {
 				listRequest.withBucketName(bucketName);
 				listRequest.withPrefix(keyFilter);
 			
-				ObjectListing listing = s3Conn.listObjects(listRequest);
-				logger.info("Starting migrating from bucket=" + listing.getBucketName() + " with prefix=" + listing.getPrefix() + " size=" + listing.getObjectSummaries().size());
-				while (listing != null) {
+			
+				ObjectListing listing;
+				do {
+					listing = s3Conn.listObjects(listRequest);
+					logger.info("Starting migrating from bucket=" + listing.getBucketName() + " with prefix=" + listing.getPrefix() + " size=" + listing.getObjectSummaries().size());
 					for (S3ObjectSummary objectSummary : listing.getObjectSummaries()) {
 						cnt++;
 						
@@ -170,11 +172,8 @@ public class S3MigrationUtil {
 							return;
 						}
 					}
-					listing = s3Conn.listNextBatchOfObjects(listing);
-					if (!listing.isTruncated()) {
-						listing = null;
-					}
-				}
+					listRequest.setMarker(listing.getNextMarker());
+				} while (listing.isTruncated());
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
